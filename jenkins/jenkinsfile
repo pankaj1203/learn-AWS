@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+    environment {
+        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        AWS_DEFAULT_REGION = "eu-central-1"
+    }
+    stages{
+        stage('Checkout SCM'){
+            steps{
+                script{
+                    checkout scmGit(branches: [[name: 'main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/pankaj1203/learn-AWS.git']])
+                }
+            }
+        }
+    stage('Deploying Nginx Application') {
+            steps{
+                withCredentials([string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'), string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'ACCESS_KEY')]) {
+
+                script{
+                        bat 'aws eks update-kubeconfig --name eks_nodejs --region eu-central-1'
+                        bat "kubectl get ns"
+                        bat 'kubectl apply -f deployment.yaml'
+                        bat 'kubectl apply -f service.yaml'
+                    }
+                }
+            }
+        }
+    }
+}
